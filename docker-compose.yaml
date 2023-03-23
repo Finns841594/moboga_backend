@@ -1,0 +1,12 @@
+version: '3.7'
+services:
+  mongodb:
+    image: mongo:latest
+    restart: always
+    container_name: 'mongodb'
+    env_file: ./containerConfig/mongodb.env
+    ports:
+      - 27017:27017
+    volumes:
+      - ./containerConfig/initMongo.js:/docker-entrypoint-initdb.d/initMongo.js
+    command: mongod --logpath=/dev/null # --quiet
