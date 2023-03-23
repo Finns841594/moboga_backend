@@ -2,11 +2,16 @@ import express, { Request, Response, Application } from 'express';
 import {
   allStories,
 } from './stories';
+import cors from 'cors';
+
 // import { getProductById } from './products';
 
 const app: Application = express();
 const port = 3000;
+
 app.use(express.json());
+app.use(cors());
+
 
 // Don't change the code above this line!
 // Write your enpoints here
