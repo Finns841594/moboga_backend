@@ -1,9 +1,7 @@
 {
   "extends": "salt-typescript",
   "parserOptions": {
-    "project": "tsconfig.json",
-    "tsconfigRootDir": "moboga_backend"
-  },
+    "project": "tsconfig.json"  },
   "ignorePatterns": ["tests.js"]
 
 }
