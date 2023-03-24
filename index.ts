@@ -1,7 +1,7 @@
 import express, { Request, Response, Application } from 'express';
 import cors from 'cors';
 import {
-  allStories, getOneStoryById, getStoriesByLabel,
+  allStories, getOneStoryById, getStoriesByLabel, fetchMediasByOid,
 } from './stories';
 
 const app: Application = express();
@@ -33,7 +33,14 @@ app.get('/api/stories/labels/:label', async (req: Request, res: Response) => {
     .json(stories);
 });
 
-// Don't change the code below this line!
+app.get('/api/medias/:id', async (req: Request, res: Response) => {
+  const mediaOid = req.params.id;
+  const media = await fetchMediasByOid(mediaOid);
+  res
+    .status(200)
+    .json(media);
+});
+
 if (require.main === module) {
   app.listen(port);
   // eslint-disable-next-line no-console

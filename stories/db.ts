@@ -1,10 +1,7 @@
-import { MongoClient } from 'mongodb';
-// import { v4 as uuidv4 } from 'uuid';
+import { MongoClient, ObjectId } from 'mongodb';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
-// const generateId = () => uuidv4();
 
 const uri = process.env.DB_KEY;
 
@@ -44,7 +41,6 @@ const fetchStoryByLabel = async (searchLabel:string) => {
     await client.connect();
     const db = client.db('mobogadb');
     const collection = db.collection('stories');
-    // change label path!!
     const stories = await collection.find(
       { labels: { $elemMatch: { name: searchLabel } } },
     ).toArray();
@@ -56,6 +52,23 @@ const fetchStoryByLabel = async (searchLabel:string) => {
   }
 };
 
+const fetchMediasByOid = async (mediaOid:string) => {
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db('mobogadb');
+    const collection = db.collection('medias');
+    const media = await collection.find(
+      { _id: ObjectId(mediaOid) },
+    ).toArray();
+    return media[0];
+  } catch (err) {
+    return null;
+  } finally {
+    await client.close();
+  }
+};
+
 export default {
-  fetchAllStories, fetchStoryById, fetchStoryByLabel,
+  fetchAllStories, fetchStoryById, fetchStoryByLabel, fetchMediasByOid,
 };
