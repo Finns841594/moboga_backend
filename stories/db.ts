@@ -1,4 +1,4 @@
-import { MongoClient, ObjectId } from 'mongodb';
+import { MongoClient } from 'mongodb';
 // import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
 
@@ -23,16 +23,15 @@ const fetchAllStories = async () => {
   }
 };
 
-const fetchStoryById = async (storyId:string) => {
+const fetchStoryById = async (storyId:number) => {
   const client = new MongoClient(uri);
   try {
     await client.connect();
     const db = client.db('mobogadb');
     const collection = db.collection('stories');
-    const stories = await collection.findOne({ _id: ObjectId(storyId) });
+    const stories = await collection.findOne({ id: storyId });
     return stories;
   } catch (err) {
-    console.log('🤑', err);
     return null;
   } finally {
     await client.close();
@@ -46,10 +45,11 @@ const fetchStoryByLabel = async (searchLabel:string) => {
     const db = client.db('mobogadb');
     const collection = db.collection('stories');
     // change label path!!
-    const story = await collection.findOne({ labels: searchLabel });
-    return story;
+    const stories = await collection.find(
+      { labels: { $elemMatch: { name: searchLabel } } },
+    ).toArray();
+    return stories;
   } catch (err) {
-    console.log('🤑', err);
     return null;
   } finally {
     await client.close();

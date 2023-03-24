@@ -1,9 +1,9 @@
 import db from './db';
 
 const allStories = async () => db.fetchAllStories();
-const getOneStoryById = async storyId => db.fetchStoryById(storyId);
-const getOneStoryByLabel = async storyId => db.fetchStoryByLabel(storyId);
+const getOneStoryById = async (storyId:number) => db.fetchStoryById(storyId);
+const getStoriesByLabel = async (storyLabel:string) => db.fetchStoryByLabel(storyLabel);
 
 export {
-  allStories, getOneStoryById, getOneStoryByLabel,
+  allStories, getOneStoryById, getStoriesByLabel,
 };
