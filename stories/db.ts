@@ -27,6 +27,7 @@ const fetchStoryById = async (storyId:number) => {
     const db = client.db('mobogadb');
     const collection = db.collection('stories');
     const stories = await collection.findOne({ id: storyId });
+    console.log('🤪🤪🤪', stories);
     return stories;
   } catch (err) {
     return null;
@@ -58,9 +59,12 @@ const fetchMediasByOid = async (mediaOid:string) => {
     await client.connect();
     const db = client.db('mobogadb');
     const collection = db.collection('medias');
-    const media = await collection.find(
-      { _id: ObjectId(mediaOid) },
-    ).toArray();
+    let media = await collection.find({ _id: ObjectId(mediaOid) }).toArray();
+    // lines below should be removed after fixing the database objectid problem
+    if (media.length === 0) {
+      media = await collection.find({ _id: mediaOid }).toArray();
+    }
+    console.log('🤪', media);
     return media[0];
   } catch (err) {
     return null;
