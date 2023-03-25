@@ -1,7 +1,9 @@
+/* eslint-disable max-len */
 import express, { Request, Response, Application } from 'express';
 import cors from 'cors';
 import {
-  allStories, getOneStoryById, getStoriesByLabel, fetchMediasByOid,
+  allStories, getOneStoryById, getStoriesByLabel, fetchMediasByOid, generateStory,
+  generateGameMedias, generateMovieMedias,
 } from './stories';
 
 const app: Application = express();
@@ -42,7 +44,29 @@ app.get('/api/medias/:id', async (req: Request, res: Response) => {
 });
 
 // Fengs working area
+app.post('/api/stories/:storyname', async (req: Request, res: Response) => {
+  const storyName = req.params.storyname;
+  const response = await generateStory(storyName);
+  res
+    .status(200)
+    .json(response);
+});
 
+app.post('/api/generatemedias/games/:storyname', async (req: Request, res: Response) => {
+  const storyName = req.params.storyname;
+  const response = await generateGameMedias(storyName);
+  res
+    .status(200)
+    .json(response);
+});
+
+app.post('/api/generatemedias/movies/:storyname', async (req: Request, res: Response) => {
+  const storyName = req.params.storyname;
+  const response = await generateMovieMedias(storyName);
+  res
+    .status(200)
+    .json(response);
+});
 // Fengs working area
 
 if (require.main === module) {
