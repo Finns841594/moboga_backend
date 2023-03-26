@@ -74,7 +74,7 @@ const fetchMediasByOid = async (mediaOid: string) => {
 };
 
 const addNewUser = async (firstName, lastName, email, password) => {
-	// const hashedPassword = await bcrypt.hash(password, 10);
+	const hashedPassword = await bcrypt.hash(password, 10);
 	const id = randomUUID();
 	const client = new MongoClient(uri);
 	try {
@@ -86,7 +86,7 @@ const addNewUser = async (firstName, lastName, email, password) => {
 			firstName,
 			lastName,
 			email,
-			// hashedPassword,
+			hashedPassword,
 		});
 	} catch (err) {
 		return { message: 'could not add new user' };
