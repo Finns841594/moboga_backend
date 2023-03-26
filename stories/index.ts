@@ -6,15 +6,20 @@ const getStoriesByLabel = async (storyLabel: string) =>
 	db.fetchStoryByLabel(storyLabel);
 const fetchMediasByOid = async (mediaOid: string) =>
 	db.fetchMediasByOid(mediaOid);
+const getAllUsers = async () => db.fetchAllUsers();
 const createUser = async (firstName, lastName, email, password) =>
 	db.addNewUser(firstName, lastName, email, password);
 const getExistingUser = async email => db.getUser(email);
+const createReview = async (mediaId, content, rating) =>
+	db.addNewReview(mediaId, content, rating);
 
 export {
 	allStories,
 	getOneStoryById,
 	getStoriesByLabel,
 	fetchMediasByOid,
+	getAllUsers,
 	createUser,
 	getExistingUser,
+	createReview,
 };

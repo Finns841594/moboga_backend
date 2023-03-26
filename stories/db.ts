@@ -72,6 +72,20 @@ const fetchMediasByOid = async (mediaOid: string) => {
 		await client.close();
 	}
 };
+const fetchAllUsers = async () => {
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('users');
+		const users = await collection.find({}).toArray();
+		return users;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
+};
 
 const addNewUser = async (firstName, lastName, email, password) => {
 	const hashedPassword = await bcrypt.hash(password, 10);
@@ -109,6 +123,49 @@ const getUser = async email => {
 		await client.close();
 	}
 };
+const getUserbyId = async id => {
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('users');
+		const existingUser = await collection.findOne({ id });
+		return existingUser;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
+};
+
+const addNewReview = async (mediaId, content, rating) => {
+	let user, media;
+	try {
+		// user = await getUserbyId(userId);
+		media = await fetchMediasByOid(mediaId);
+	} catch (err) {
+		return { message: 'could not fetch user or media' };
+	}
+	if (media) {
+		const id = randomUUID();
+		const client = new MongoClient(uri);
+		try {
+			await client.connect();
+			const db = client.db('mobogadb');
+			const collection = db.collection('reviews');
+			await collection.insertOne({
+				id,
+				mediaId,
+				content,
+				rating,
+			});
+		} catch (err) {
+			return { message: 'could not add new review' };
+		} finally {
+			await client.close();
+		}
+	}
+};
 
 // Fengs working area
 
@@ -121,4 +178,6 @@ export default {
 	fetchMediasByOid,
 	addNewUser,
 	getUser,
+	addNewReview,
+	fetchAllUsers,
 };

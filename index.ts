@@ -7,6 +7,8 @@ import {
 	fetchMediasByOid,
 	createUser,
 	getExistingUser,
+	createReview,
+	getAllUsers,
 } from './stories';
 import jwt from 'jsonwebtoken';
 const bcrypt = require('bcryptjs');
@@ -40,7 +42,12 @@ app.get('/api/medias/:id', async (req: Request, res: Response) => {
 	res.status(200).json(media);
 });
 
-app.post('/api/register', async (req: Request, res: Response) => {
+// app.get('/api/users', async (req: Request, res: Response) => {
+// 	const users = await getAllUsers();
+// 	res.status(200).json(users);
+// });
+
+app.post('/api/users', async (req: Request, res: Response) => {
 	const { firstName, lastName, email, password } = req.body;
 	const existingUser = await getExistingUser(email);
 	if (existingUser) {
@@ -50,7 +57,7 @@ app.post('/api/register', async (req: Request, res: Response) => {
 		const token = jwt.sign({ email }, process.env.JWT_SECRET as string, {
 			expiresIn: '1h',
 		});
-		res.status(200).json(token);
+		res.status(200).json({ token });
 	}
 });
 
@@ -71,8 +78,24 @@ app.post('/api/login', async (req: Request, res: Response) => {
 		const token = jwt.sign({ email }, process.env.JWT_SECRET as string, {
 			expiresIn: '1h',
 		});
-
 		res.status(200).json(token);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ message: 'Server error' });
+	}
+});
+
+// app.get('/api/reviews', async (req: Request, res: Response) => {
+// 	const {userId} = req.body;
+// 	const reviews = await getAllUserReviews(userId);
+// 	res.status(200).json(reviews);
+// });
+
+app.post('/api/reviews', async (req: Request, res: Response) => {
+	const { content, rating, mediaId } = req.body;
+	try {
+		const review = await createReview(mediaId, content, rating);
+		res.status(200).json(review);
 	} catch (error) {
 		console.error(error);
 		res.status(500).json({ message: 'Server error' });
