@@ -195,7 +195,7 @@ const generateStory = async (storyName:string) => {
     const db = client.db('mobogadb');
     const collection = db.collection('stories');
     const response = await collection.insertOne({
-      id: 0,
+      id: randomUUID(),
       storyname: storyName,
       labels: [],
       books: [],
@@ -222,7 +222,7 @@ const generateGameMedias = async (storyName:string) => {
   const bulkMedias = [];
   rawData.data.results.slice(0, amoutsOfMedia).forEach(element => {
     bulkMedias.push({
-      id: 0,
+      id: randomUUID(),
       name: element.name,
       description: 'to be written',
       type: 'games',
@@ -245,12 +245,13 @@ const generateGameMedias = async (storyName:string) => {
     const responseAddDB = await mediasCollection.insertMany(bulkMedias);
     // write in to respective story
     const mediaArrayForStory = [];
-    for (let i = 0; i < amoutsOfMedia; i++) {
+    responseAddDB.ops.forEach(element => {
       mediaArrayForStory.push({
-        oid: responseAddDB.insertedIds[String(i)].toString(),
-        name: bulkMedias[i].name,
+        // eslint-disable-next-line no-underscore-dangle
+        oid: element._id.toString(),
+        name: element.name,
       });
-    }
+    });
     console.log('😃 Writting following data into games area', mediaArrayForStory);
     const responseAddToStory = await storiesCollection
       .updateOne({ storyname: storyName }, { $set: { games: mediaArrayForStory } });
@@ -275,18 +276,17 @@ const generateMovieMedias = async (storyName:string) => {
   const bulkMedias = [];
   rawData.data.results.slice(0, amoutsOfMedia).forEach(element => {
     bulkMedias.push({
-      id: 0,
+      id: randomUUID(),
       name: element.original_title,
       description: element.overview,
       type: 'movies',
-      released: element.released_date,
+      released: element.release_date,
       imgurl: `https://image.tmdb.org/t/p/original/${element.poster_path}`,
       ratingFromAPI: element.vote_average * 10,
       voteNumberFromAPI: element.vote_count,
       metaData: element,
     });
   });
-  console.log('⏺️⏺️⏺️ Writting into <medias>', bulkMedias);
 
   const client = new MongoClient(uri);
   try {
@@ -295,21 +295,28 @@ const generateMovieMedias = async (storyName:string) => {
     const storiesCollection = db.collection('stories');
     const mediasCollection = db.collection('medias');
     // write in media collection
+    // console.log('⏺️⏺️⏺️ Writting into <medias>', bulkMedias);
     const responseAddDB = await mediasCollection.insertMany(bulkMedias);
+    console.log('⏺️⏺️⏺️ RESPONSE', responseAddDB);
+    console.log('⏺️⏺️⏺️ RESPONSE ONE ITEM', responseAddDB.insertedIds[String(2)]);
     // write in to respective story
     const mediaArrayForStory = [];
-    for (let i = 0; i < amoutsOfMedia; i++) {
+
+    responseAddDB.ops.forEach(element => {
       mediaArrayForStory.push({
-        oid: responseAddDB.insertedIds[String(i)].toString(),
-        name: bulkMedias[i].name,
+        // eslint-disable-next-line no-underscore-dangle
+        oid: element._id.toString(),
+        name: element.name,
       });
-    }
+    });
+
     console.log('😃 Writting following data into movies area', mediaArrayForStory);
     const responseAddToStory = await storiesCollection
       .updateOne({ storyname: storyName }, { $set: { movies: mediaArrayForStory } });
 
     return { responseAddDB, responseAddToStory };
   } catch (err) {
+    console.log('🤬🤬🤬', err);
     return null;
   } finally {
     await client.close();
