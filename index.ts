@@ -11,7 +11,7 @@ import {
   getExistingUser,
   createReview,
   generateStory,
-  generateGameMedias, generateMovieMedias,
+  generateGameMedias, generateMovieMedias, generateBooksMedias,
 } from './stories';
 
 const bcrypt = require('bcryptjs');
@@ -132,21 +132,39 @@ app.post('/api/stories/:storyname', async (req: Request, res: Response) => {
     .json(response);
 });
 
-app.post('/api/generatemedias/games/:storyname', async (req: Request, res: Response) => {
+app.post('/api/generatemedias/:storyname', async (req: Request, res: Response) => {
   const storyName = req.params.storyname;
-  const response = await generateGameMedias(storyName);
+  const responseGames = await generateGameMedias(storyName);
+  const responseMovies = await generateMovieMedias(storyName);
+  const responseBooks = await generateBooksMedias(storyName);
   res
     .status(200)
-    .json(response);
+    .json({ responseGames, responseMovies, responseBooks });
 });
 
-app.post('/api/generatemedias/movies/:storyname', async (req: Request, res: Response) => {
-  const storyName = req.params.storyname;
-  const response = await generateMovieMedias(storyName);
-  res
-    .status(200)
-    .json(response);
-});
+// app.post('/api/generatemedias/games/:storyname', async (req: Request, res: Response) => {
+//   const storyName = req.params.storyname;
+//   const response = await generateGameMedias(storyName);
+//   res
+//     .status(200)
+//     .json(response);
+// });
+
+// app.post('/api/generatemedias/movies/:storyname', async (req: Request, res: Response) => {
+//   const storyName = req.params.storyname;
+//   const response = await generateMovieMedias(storyName);
+//   res
+//     .status(200)
+//     .json(response);
+// });
+
+// app.post('/api/generatemedias/books/:storyname', async (req: Request, res: Response) => {
+//   const storyName = req.params.storyname;
+//   const response = await generateBooksMedias(storyName);
+//   res
+//     .status(200)
+//     .json(response);
+// });
 // Fengs working area
 
 if (require.main === module) {

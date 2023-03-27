@@ -22,6 +22,8 @@ const generateGameMedias = async (storyName:string) => db.generateGameMedias(sto
 
 const generateMovieMedias = async (storyName:string) => db.generateMovieMedias(storyName);
 
+const generateBooksMedias = async (storyName:string) => db.generateBooksMedias(storyName);
+
 export {
   allStories,
   getOneStoryById,
@@ -34,4 +36,5 @@ export {
   generateStory,
   generateGameMedias,
   generateMovieMedias,
+  generateBooksMedias,
 };

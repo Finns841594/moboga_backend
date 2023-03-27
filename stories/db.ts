@@ -12,6 +12,7 @@ dotenv.config();
 const uri = process.env.DB_KEY;
 const gameApiPath = process.env.GAME_API_PATH;
 const movieApiPath = process.env.MOVIE_API_PATH;
+const bookApiPath = process.env.BOOK_API_PATH;
 
 const fetchAllStories = async () => {
   const client = new MongoClient(uri);
@@ -323,6 +324,63 @@ const generateMovieMedias = async (storyName:string) => {
   }
 };
 
+const generateBooksMedias = async (storyName:string) => {
+  // SETTINGS
+  // maybe should consider use dynamic amount of media !!!!!!
+  const amoutsOfMedia = 10;
+  // fetch data from movie api
+  // maybe should fetch data from tv api as well !!!!!!
+  const url = bookApiPath + storyName;
+  const rawData = await axios(url);
+  // get top ten results into <bulkMedia>
+  const bulkMedias = [];
+  rawData.data.items.slice(0, amoutsOfMedia).forEach(element => {
+    bulkMedias.push({
+      id: randomUUID(),
+      name: element.volumeInfo.title,
+      description: element.volumeInfo.description,
+      type: 'books',
+      released: element.volumeInfo.publishedDate,
+      imgurl: element.volumeInfo.imageLinks.thumbnail,
+      ratingFromAPI: element.volumeInfo.averageRating * 20,
+      voteNumberFromAPI: element.volumeInfo.ratingsCount,
+      metaData: element,
+    });
+  });
+
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db('mobogadb');
+    const storiesCollection = db.collection('stories');
+    const mediasCollection = db.collection('medias');
+    // write in media collection
+    const responseAddDB = await mediasCollection.insertMany(bulkMedias);
+    console.log('⏺️⏺️⏺️ RESPONSE', responseAddDB);
+    // write in to respective story
+    const mediaArrayForStory = [];
+
+    responseAddDB.ops.forEach(element => {
+      mediaArrayForStory.push({
+        // eslint-disable-next-line no-underscore-dangle
+        oid: element._id.toString(),
+        name: element.name,
+      });
+    });
+
+    console.log('😃 Writting following data into movies area', mediaArrayForStory);
+    const responseAddToStory = await storiesCollection
+      .updateOne({ storyname: storyName }, { $set: { books: mediaArrayForStory } });
+
+    return { responseAddDB, responseAddToStory };
+  } catch (err) {
+    console.log('🤬🤬🤬', err);
+    return null;
+  } finally {
+    await client.close();
+  }
+};
+
 // Fengs working area
 
 export default {
@@ -337,4 +395,5 @@ export default {
   generateStory,
   generateGameMedias,
   generateMovieMedias,
+  generateBooksMedias,
 };
