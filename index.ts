@@ -8,7 +8,6 @@ import {
 	createUser,
 	getExistingUser,
 	createReview,
-	getAllUsers,
 } from './stories';
 import jwt from 'jsonwebtoken';
 const bcrypt = require('bcryptjs');
@@ -42,10 +41,28 @@ app.get('/api/medias/:id', async (req: Request, res: Response) => {
 	res.status(200).json(media);
 });
 
-// app.get('/api/users', async (req: Request, res: Response) => {
-// 	const users = await getAllUsers();
-// 	res.status(200).json(users);
-// });
+app.get('/api/users', async (req: Request, res: Response) => {
+	const token = req.headers.authorization.split(' ')[1];
+	if (!token) {
+		return res.status(401).json({ message: 'Authorization token missing' });
+	}
+	try {
+		const decodedToken = jwt.verify(token, process.env.JWT_SECRET as string);
+		const user = await getExistingUser(decodedToken.email);
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+		res.status(200).json({
+			userId: user.id,
+			email: user.email,
+			name: user.firstName,
+			lastName: user.lastName,
+		});
+	} catch (error) {
+		console.error(error);
+		res.status(401).json({ message: 'Authorization token invalid' });
+	}
+});
 
 app.post('/api/users', async (req: Request, res: Response) => {
 	const { firstName, lastName, email, password } = req.body;
@@ -53,11 +70,8 @@ app.post('/api/users', async (req: Request, res: Response) => {
 	if (existingUser) {
 		return res.status(400).json({ message: 'User already exists' });
 	} else {
-		await createUser(firstName, lastName, email, password);
-		const token = jwt.sign({ email }, process.env.JWT_SECRET as string, {
-			expiresIn: '1h',
-		});
-		res.status(200).json({ token });
+		const token = await createUser(firstName, lastName, email, password);
+		res.status(200).json(token);
 	}
 });
 
@@ -76,7 +90,7 @@ app.post('/api/login', async (req: Request, res: Response) => {
 			return res.status(401).json({ message: 'Password incorrect' });
 		}
 		const token = jwt.sign({ email }, process.env.JWT_SECRET as string, {
-			expiresIn: '1h',
+			expiresIn: '48h',
 		});
 		res.status(200).json(token);
 	} catch (error) {
@@ -92,9 +106,9 @@ app.post('/api/login', async (req: Request, res: Response) => {
 // });
 
 app.post('/api/reviews', async (req: Request, res: Response) => {
-	const { content, rating, mediaId } = req.body;
+	const { content, rating, mediaId, name, userId } = req.body;
 	try {
-		const review = await createReview(mediaId, content, rating);
+		const review = await createReview(mediaId, content, rating, name, userId);
 		res.status(200).json(review);
 	} catch (error) {
 		console.error(error);

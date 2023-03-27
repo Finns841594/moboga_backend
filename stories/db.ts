@@ -2,6 +2,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 import dotenv from 'dotenv';
 const bcrypt = require('bcryptjs');
 import { randomUUID } from 'crypto';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -102,6 +103,14 @@ const addNewUser = async (firstName, lastName, email, password) => {
 			email,
 			hashedPassword,
 		});
+		const token = jwt.sign(
+			{ email, id, firstName, lastName },
+			process.env.JWT_SECRET as string,
+			{
+				expiresIn: '48h',
+			}
+		);
+		return token;
 	} catch (err) {
 		return { message: 'could not add new user' };
 	} finally {
@@ -138,15 +147,15 @@ const getUserbyId = async id => {
 	}
 };
 
-const addNewReview = async (mediaId, content, rating) => {
+const addNewReview = async (mediaId, content, rating, name, userId) => {
 	let user, media;
 	try {
-		// user = await getUserbyId(userId);
+		user = await getUserbyId(userId);
 		media = await fetchMediasByOid(mediaId);
 	} catch (err) {
 		return { message: 'could not fetch user or media' };
 	}
-	if (media) {
+	if (media && userId) {
 		const id = randomUUID();
 		const client = new MongoClient(uri);
 		try {
@@ -156,8 +165,10 @@ const addNewReview = async (mediaId, content, rating) => {
 			await collection.insertOne({
 				id,
 				mediaId,
+				name,
 				content,
 				rating,
+				userId,
 			});
 		} catch (err) {
 			return { message: 'could not add new review' };
