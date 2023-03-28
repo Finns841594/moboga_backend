@@ -2,13 +2,11 @@ import db from './db';
 
 const allStories = async () => db.fetchAllStories();
 
-const getOneStoryById = async (storyId: number) => db.fetchStoryById(storyId);
+const getOneStoryById = async (storyId: string) => db.fetchStoryById(storyId);
 
 const getStoriesByLabel = async (storyLabel: string) => db.fetchStoryByLabel(storyLabel);
 
 const fetchMediasByOid = async (mediaOid: string) => db.fetchMediasByOid(mediaOid);
-
-const getAllUsers = async () => db.fetchAllUsers();
 
 const createUser = async (firstName, lastName, email, password) => db.addNewUser(firstName, lastName, email, password);
 
@@ -16,7 +14,9 @@ const getExistingUser = async email => db.getUser(email);
 
 const getAllUserReviews = async (userId:string) => db.getAllReviewsFromUser(userId);
 
-const createReview = async (mediaId, content, rating, name, userId) => db.addNewReview(mediaId, content, rating, name, userId);
+const getReviewsByStoryId = async (userId:string) => db.getReviewsByStoryId(userId);
+
+const createReview = async reviewObj => db.addNewReview(reviewObj);
 
 const updateReview = async (userId:string, reviewId:string) => db.updateReview(userId, reviewId);
 
@@ -35,16 +35,16 @@ export {
   getOneStoryById,
   getStoriesByLabel,
   fetchMediasByOid,
-  getAllUsers,
   createUser,
   getExistingUser,
   getAllUserReviews,
-  createReview, 
+  getReviewsByStoryId,
+  createReview,
   updateReview,
   deleteReview,
   generateStory,
   generateGameMedias,
   generateMovieMedias,
   generateBooksMedias,
- 
+
 };
