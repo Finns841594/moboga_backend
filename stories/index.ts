@@ -14,7 +14,13 @@ const createUser = async (firstName, lastName, email, password) => db.addNewUser
 
 const getExistingUser = async email => db.getUser(email);
 
+const getAllUserReviews = async (userId:string) => db.getAllReviewsFromUser(userId);
+
 const createReview = async (mediaId, content, rating, name, userId) => db.addNewReview(mediaId, content, rating, name, userId);
+
+const updateReview = async (userId:string, reviewId:string) => db.updateReview(userId, reviewId);
+
+const deleteReview = async (userId:string, reviewId:string) => db.deleteReview(userId, reviewId);
 
 const generateStory = async (storyName:string) => db.generateStory(storyName);
 
@@ -32,9 +38,13 @@ export {
   getAllUsers,
   createUser,
   getExistingUser,
-  createReview,
+  getAllUserReviews,
+  createReview, 
+  updateReview,
+  deleteReview,
   generateStory,
   generateGameMedias,
   generateMovieMedias,
   generateBooksMedias,
+ 
 };
