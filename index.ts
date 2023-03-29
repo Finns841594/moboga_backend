@@ -18,6 +18,9 @@ import {
   getReviewsByStoryId,
   updateReview,
   deleteReview,
+  getAllLabels,
+  addAlabelInDB,
+  setALabelToAStory,
 } from './stories';
 
 const bcrypt = require('bcryptjs');
@@ -39,12 +42,14 @@ app.get('/api/stories/:id', async (req: Request, res: Response) => {
   res.status(200).json(story);
 });
 
-app.get('/api/stories/labels/:label', async (req: Request, res: Response) => {
+// Get stories by a label id
+app.get('/api/stories/getbylabels/:label', async (req: Request, res: Response) => {
   const storyLabel = req.params.label;
   const stories = await getStoriesByLabel(storyLabel);
   res.status(200).json(stories);
 });
 
+// Get media by media oid
 app.get('/api/medias/:id', async (req: Request, res: Response) => {
   const mediaOid = req.params.id;
   const media = await fetchMediasByOid(mediaOid);
@@ -185,6 +190,27 @@ app.post(
 //     .status(200)
 //     .json(response);
 // });
+
+// Get all labels
+app.get('/api/labels', async (req: Request, res: Response) => {
+  const labels = await getAllLabels();
+  res.status(200).json(labels);
+});
+
+// Add a new label
+app.post('/api/labels/:labelName', async (req: Request, res: Response) => {
+  const { labelName } = req.params;
+  const response = await addAlabelInDB(labelName);
+  res.status(201).json(response);
+});
+
+// Add a label to a story
+app.post('/api/labels/:labelName/:storyId', async (req: Request, res: Response) => {
+  const { labelName, storyId } = req.params;
+  const response = await setALabelToAStory(labelName, storyId);
+  res.status(200).json(response);
+});
+
 // Fengs working area
 
 if (require.main === module) {

@@ -44,7 +44,7 @@ const fetchStoryById = async (storyId: string) => {
   }
 };
 
-const fetchStoryByLabel = async (searchLabel: string) => {
+const getStoriesByLabel = async (searchLabel: string) => {
   const client = new MongoClient(uri);
   try {
     await client.connect();
@@ -337,7 +337,7 @@ const generateBooksMedias = async (storyName: string) => {
       description: element.volumeInfo.description,
       type: 'books',
       released: element.volumeInfo.publishedDate,
-      imgurl: element.volumeInfo.imageLinks.thumbnail,
+      imgurl: element.volumeInfo.imageLinks?.thumbnail,
       ratingFromAPI: element.volumeInfo.averageRating * 20,
       voteNumberFromAPI: element.volumeInfo.ratingsCount,
       metaData: element,
@@ -373,12 +373,79 @@ const generateBooksMedias = async (storyName: string) => {
   }
 };
 
+const getAllLabels = async () => {
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db('mobogadb');
+    const collection = db.collection('labels');
+    const labels = await collection.find({}).toArray();
+    return labels;
+  } catch (err) {
+    return null;
+  } finally {
+    await client.close();
+  }
+};
+
+const addAlabelInDB = async (labelName:string) => {
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db('mobogadb');
+    const collection = db.collection('labels');
+    // check if label already exist
+    const checkResult = await collection.findOne({ name: labelName });
+    if (!checkResult) {
+      const response = await collection.insertOne({
+        id: 0,
+        name: labelName,
+      });
+      return response;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  } finally {
+    await client.close();
+  }
+};
+
+// working on this
+const setALabelToAStory = async (labelName:string, StoryId:string) => {
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db('mobogadb');
+    const storyColl = db.collection('stories');
+    const labelColl = db.collection('labels');
+    const labelObjs = await labelColl.findOne({ name: labelName });
+    console.log('🤪labelObjs', labelObjs);
+    // check if label already exist
+    // eslint-disable-next-line max-len
+    const checkResult = await storyColl.find({ $and: [{ labels: { $elemMatch: { name: labelName } } }, { id: StoryId }] }).toArray();
+    console.log('🤪checkResult', checkResult);
+    if (checkResult.length === 0) {
+      const responseAddLabel = await storyColl.updateOne(
+        { id: StoryId },
+        { $push: { labels: labelObjs } },
+      );
+      return responseAddLabel;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  } finally {
+    await client.close();
+  }
+};
+
 // Fengs working area
 
 export default {
   fetchAllStories,
   fetchStoryById,
-  fetchStoryByLabel,
+  getStoriesByLabel,
   fetchMediasByOid,
 
   addNewUser,
@@ -394,4 +461,8 @@ export default {
   generateMovieMedias,
   generateBooksMedias,
   getAllReviewsFromUser,
+
+  getAllLabels,
+  addAlabelInDB,
+  setALabelToAStory,
 };

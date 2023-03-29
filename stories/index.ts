@@ -1,10 +1,11 @@
+/* eslint-disable max-len */
 import db from './db';
 
 const allStories = async () => db.fetchAllStories();
 
 const getOneStoryById = async (storyId: string) => db.fetchStoryById(storyId);
 
-const getStoriesByLabel = async (storyLabel: string) => db.fetchStoryByLabel(storyLabel);
+const getStoriesByLabel = async (storyLabel: string) => db.getStoriesByLabel(storyLabel);
 
 const fetchMediasByOid = async (mediaOid: string) => db.fetchMediasByOid(mediaOid);
 
@@ -30,6 +31,12 @@ const generateMovieMedias = async (storyName:string) => db.generateMovieMedias(s
 
 const generateBooksMedias = async (storyName:string) => db.generateBooksMedias(storyName);
 
+const getAllLabels = async () => db.getAllLabels();
+
+const addAlabelInDB = async (labelName:string) => db.addAlabelInDB(labelName);
+
+const setALabelToAStory = async (labelName:string, StoryId:string) => db.setALabelToAStory(labelName, StoryId);
+
 export {
   allStories,
   getOneStoryById,
@@ -46,5 +53,8 @@ export {
   generateGameMedias,
   generateMovieMedias,
   generateBooksMedias,
+  getAllLabels,
+  addAlabelInDB,
+  setALabelToAStory,
 
 };
