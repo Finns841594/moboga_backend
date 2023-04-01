@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/indent */
 /* eslint-disable no-trailing-spaces */
 /* eslint-disable no-tabs */
@@ -17,6 +18,12 @@ const uri = process.env.DB_KEY;
 const gameApiPath = process.env.GAME_API_PATH;
 const movieApiPath = process.env.MOVIE_API_PATH;
 const bookApiPath = process.env.BOOK_API_PATH;
+
+// Capitalize first letter of each word
+const capitalize = (str: string) => str
+		.split(' ')
+		.map(word => word[0].toUpperCase() + word.slice(1))
+		.join(' ');
 
 const fetchAllStories = async () => {
   const client = new MongoClient(uri);
@@ -232,7 +239,7 @@ const generateStory = async (storyName: string) => {
     const collection = db.collection('stories');
     const response = await collection.insertOne({
       id: randomUUID(),
-      storyname: storyName,
+      storyname: capitalize(storyName.toLowerCase()),
       labels: [],
       books: [],
       movies: [],
@@ -286,7 +293,7 @@ const generateGameMedias = async (storyName: string) => {
       { $set: { games: mediaArrayForStory } },
     );
 
-    return { responseAddDB, responseAddToStory };
+    return { addedToStory: storyName, responseAddDB, responseAddToStory };
   } catch (err) {
     return null;
   } finally {
@@ -389,6 +396,21 @@ const generateBooksMedias = async (storyName: string) => {
   }
 };
 
+// const addStoryFromTestStoriesCollectionToStoriesCollection = async (storyId: string) => {
+// 	const client = new MongoClient(uri);
+// 	try {
+// 		await client.connect();
+// 		const db = client.db('mobogadb');
+// 		const testStoriesCollection = db.collection('teststories');
+// 		const response = await testStoriesCollection.aggregate([{ $match: { id: storyId } }, { $out: 'teststories' }]);
+// 		return response;
+// 	} catch (err) {
+// 		return null;
+// 	} finally {
+// 		await client.close();
+// 	}
+// };
+
 const getAllLabels = async () => {
   const client = new MongoClient(uri);
   try {
@@ -427,7 +449,6 @@ const addAlabelInDB = async (labelName: string) => {
   }
 };
 
-// working on this
 const setALabelToAStory = async (labelName: string, StoryId: string) => {
   const client = new MongoClient(uri);
   try {
