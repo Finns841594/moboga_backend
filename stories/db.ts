@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/indent */
+/* eslint-disable no-trailing-spaces */
+/* eslint-disable no-tabs */
+/* eslint-disable consistent-return */
 /* eslint-disable import/no-extraneous-dependencies */
 import { MongoClient, ObjectId } from 'mongodb';
 import dotenv from 'dotenv';
@@ -164,7 +168,7 @@ const getReviewsByStoryId = async storyId => {
 const addNewReview = async reviewObj => {
   const {
     userId, userName, content, rating, mediaType, storyId, storyName,
-  } =		reviewObj;
+  } = reviewObj;
   const id = randomUUID();
   const client = new MongoClient(uri);
   try {
@@ -432,9 +436,7 @@ const setALabelToAStory = async (labelName: string, StoryId: string) => {
     const storyColl = db.collection('stories');
     const labelColl = db.collection('labels');
     const labelObjs = await labelColl.findOne({ name: labelName });
-    console.log('🤪labelObjs', labelObjs);
     // check if label already exist
-    // eslint-disable-next-line max-len
     const checkResult = await storyColl
       .find({
         $and: [
@@ -453,6 +455,69 @@ const setALabelToAStory = async (labelName: string, StoryId: string) => {
     }
     return null;
   } catch (err) {
+    return null;
+  } finally {
+    await client.close();
+  }
+};
+
+const deleteALabelFromAStory = async (labelName: string, StoryId: string) => {
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const storyColl = db.collection('stories');
+		// delete the label from the story
+		const responseRemoveLabel = await storyColl.updateOne(
+			{ id: StoryId },
+			{ $pull: { labels: { name: labelName } } },
+		);
+		return responseRemoveLabel;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
+};	
+
+const voteALabelToAStory = async (labelName: string, StoryId: string, userId: string) => {
+  console.log('Removing userId:', userId, 'from label:', labelName, 'in story(id):', StoryId);
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db('mobogadb');
+    const storyColl = db.collection('stories');
+    // check if the label in the story
+    const checkResult = await await storyColl
+      .find({ $and: [{ labels: { $elemMatch: { name: labelName } } }, { id: StoryId }] }).toArray();
+    // if not, return null
+    if (checkResult.length === 0) {
+      return null;
+    }
+    // if yes, go through the labels array
+    await checkResult[0].labels.forEach(async label => {
+      // if the label name is the same as the labelName
+      if (label.name === labelName) {
+        // if user has voted, remove the user from the voted_users array
+        if (label.voted_users.includes(userId)) {
+          const removeUser = await storyColl.updateOne(
+            { id: StoryId },
+            { $pull: { 'labels.$[label].voted_users': userId } },
+            { arrayFilters: [{ 'label.name': labelName }] },
+          );
+          return removeUser;
+        }
+        // if user has not voted, add the user to the voted_users array
+        const addUser = await storyColl.updateOne(
+          { id: StoryId },
+          { $push: { 'labels.$[label].voted_users': userId } },
+					{ arrayFilters: [{ 'label.name': labelName }] },
+        );
+        return addUser;
+      }
+    });
+  } catch (err) {
+    console.log(err);
     return null;
   } finally {
     await client.close();
@@ -484,4 +549,6 @@ export default {
   getAllLabels,
   addAlabelInDB,
   setALabelToAStory,
+	deleteALabelFromAStory,
+  voteALabelToAStory,
 };
