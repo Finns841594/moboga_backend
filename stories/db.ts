@@ -1,3 +1,8 @@
+/* eslint-disable max-len */
+/* eslint-disable @typescript-eslint/indent */
+/* eslint-disable no-trailing-spaces */
+/* eslint-disable no-tabs */
+/* eslint-disable consistent-return */
 /* eslint-disable import/no-extraneous-dependencies */
 import { MongoClient, ObjectId } from 'mongodb';
 import dotenv from 'dotenv';
@@ -13,6 +18,12 @@ const uri = process.env.DB_KEY;
 const gameApiPath = process.env.GAME_API_PATH;
 const movieApiPath = process.env.MOVIE_API_PATH;
 const bookApiPath = process.env.BOOK_API_PATH;
+
+// Capitalize first letter of each word
+const capitalize = (str: string) => str
+		.split(' ')
+		.map(word => word[0].toUpperCase() + word.slice(1))
+		.join(' ');
 
 const fetchAllStories = async () => {
 	const client = new MongoClient(uri);
@@ -255,21 +266,37 @@ const deleteReview = async reviewId => {
 
 // Fengs working area
 const generateStory = async (storyName: string) => {
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db('mobogadb');
+    const collection = db.collection('stories');
+    const response = await collection.insertOne({
+      id: randomUUID(),
+      storyname: capitalize(storyName.toLowerCase()),
+      labels: [],
+      books: [],
+      movies: [],
+      games: [],
+      rating: 0,
+    });
+    return response;
+  } catch (err) {
+    return null;
+  } finally {
+    await client.close();
+  }
+
+};
+
+const deleteAStory = async (storyId: string) => {
 	const client = new MongoClient(uri);
 	try {
 		await client.connect();
 		const db = client.db('mobogadb');
 		const collection = db.collection('stories');
-		const response = await collection.insertOne({
-			id: randomUUID(),
-			storyname: storyName,
-			labels: [],
-			books: [],
-			movies: [],
-			games: [],
-			rating: 0,
-		});
-		return response;
+		const deleteStoryResponse = collection.deleteOne({ id: storyId });
+		return deleteStoryResponse;
 	} catch (err) {
 		return null;
 	} finally {
@@ -278,50 +305,55 @@ const generateStory = async (storyName: string) => {
 };
 
 const generateGameMedias = async (storyName: string) => {
-	const amoutsOfMedia = 10;
-	const url = gameApiPath + storyName;
-	const rawData = await axios(url);
-	const bulkMedias = [];
-	rawData.data.results.slice(0, amoutsOfMedia).forEach(element => {
-		bulkMedias.push({
-			id: randomUUID(),
-			name: element.name,
-			description: 'to be written',
-			type: 'games',
-			released: element.released,
-			imgurl: element.background_image,
-			ratingFromAPI: element.metacritic,
-			voteNumberFromAPI: element.ratings_count,
-			metaData: element,
-		});
-	});
+  const amoutsOfMedia = 10;
+  const url = gameApiPath + storyName;
+  const rawData = await axios(url);
+  const bulkMedias = [];
+  rawData.data.results.slice(0, amoutsOfMedia).forEach(element => {
+    bulkMedias.push({
+      id: randomUUID(),
+      name: element.name,
+      description: 'to be written',
+      type: 'games',
+      released: element.released,
+      imgurl: element.background_image,
+      ratingFromAPI: element.metacritic,
+      voteNumberFromAPI: element.ratings_count,
+      metaData: element,
+    });
+  });
 
-	const client = new MongoClient(uri);
-	try {
-		await client.connect();
-		const db = client.db('mobogadb');
-		const storiesCollection = db.collection('stories');
-		const mediasCollection = db.collection('medias');
-		const responseAddDB = await mediasCollection.insertMany(bulkMedias);
-		const mediaArrayForStory = [];
-		responseAddDB.ops.forEach(element => {
-			mediaArrayForStory.push({
-				// eslint-disable-next-line no-underscore-dangle
-				oid: element._id.toString(),
-				name: element.name,
-			});
-		});
-		const responseAddToStory = await storiesCollection.updateOne(
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db('mobogadb');
+    const storiesCollection = db.collection('stories');
+    const mediasCollection = db.collection('medias');
+    const responseAddDB = await mediasCollection.insertMany(bulkMedias);
+    const mediaArrayForStory = [];
+    responseAddDB.ops.forEach(element => {
+      mediaArrayForStory.push({
+        // eslint-disable-next-line no-underscore-dangle
+        oid: element._id.toString(),
+        name: element.name,
+      });
+    });
+    const responseAddToStory = await storiesCollection.updateOne(
+      { storyname: storyName },
+      { $set: { games: mediaArrayForStory } },
+    );
+
+		const addedStoryInfo = await storiesCollection.find(
 			{ storyname: storyName },
-			{ $set: { games: mediaArrayForStory } }
-		);
+		).toArray();
+		const addedStoryId = addedStoryInfo[0].id;
 
-		return { responseAddDB, responseAddToStory };
-	} catch (err) {
-		return null;
-	} finally {
-		await client.close();
-	}
+    return { addedToStoryWithId: addedStoryId, responseAddDB, responseAddToStory };
+  } catch (err) {
+    return null;
+  } finally {
+    await client.close();
+  }
 };
 
 const generateMovieMedias = async (storyName: string) => {
@@ -419,6 +451,21 @@ const generateBooksMedias = async (storyName: string) => {
 	}
 };
 
+// const addStoryFromTestStoriesCollectionToStoriesCollection = async (storyId: string) => {
+// 	const client = new MongoClient(uri);
+// 	try {
+// 		await client.connect();
+// 		const db = client.db('mobogadb');
+// 		const testStoriesCollection = db.collection('teststories');
+// 		const response = await testStoriesCollection.aggregate([{ $match: { id: storyId } }, { $out: 'teststories' }]);
+// 		return response;
+// 	} catch (err) {
+// 		return null;
+// 	} finally {
+// 		await client.close();
+// 	}
+// };
+
 const getAllLabels = async () => {
 	const client = new MongoClient(uri);
 	try {
@@ -457,40 +504,100 @@ const addAlabelInDB = async (labelName: string) => {
 	}
 };
 
-// working on this
 const setALabelToAStory = async (labelName: string, StoryId: string) => {
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db('mobogadb');
+    const storyColl = db.collection('stories');
+    const labelColl = db.collection('labels');
+    const labelObjs = await labelColl.findOne({ name: labelName });
+    // check if label already exist
+    const checkResult = await storyColl
+      .find({
+        $and: [
+          { labels: { $elemMatch: { name: labelName } } },
+          { id: StoryId },
+        ],
+      })
+      .toArray();
+    console.log('🤪checkResult', checkResult);
+    if (checkResult.length === 0) {
+      const responseAddLabel = await storyColl.updateOne(
+        { id: StoryId },
+        { $push: { labels: labelObjs } },
+      );
+      return responseAddLabel;
+    }
+    return null;
+  } catch (err) {
+    return null;
+  } finally {
+    await client.close();
+  }
+};
+
+const deleteALabelFromAStory = async (labelName: string, StoryId: string) => {
 	const client = new MongoClient(uri);
 	try {
 		await client.connect();
 		const db = client.db('mobogadb');
 		const storyColl = db.collection('stories');
-		const labelColl = db.collection('labels');
-		const labelObjs = await labelColl.findOne({ name: labelName });
-		console.log('🤪labelObjs', labelObjs);
-		// check if label already exist
-		// eslint-disable-next-line max-len
-		const checkResult = await storyColl
-			.find({
-				$and: [
-					{ labels: { $elemMatch: { name: labelName } } },
-					{ id: StoryId },
-				],
-			})
-			.toArray();
-		console.log('🤪checkResult', checkResult);
-		if (checkResult.length === 0) {
-			const responseAddLabel = await storyColl.updateOne(
-				{ id: StoryId },
-				{ $push: { labels: labelObjs } }
-			);
-			return responseAddLabel;
-		}
-		return null;
+		// delete the label from the story
+		const responseRemoveLabel = await storyColl.updateOne(
+			{ id: StoryId },
+			{ $pull: { labels: { name: labelName } } },
+		);
+		return responseRemoveLabel;
 	} catch (err) {
 		return null;
 	} finally {
 		await client.close();
 	}
+};	
+
+const voteALabelToAStory = async (labelName: string, StoryId: string, userId: string) => {
+  console.log('Removing userId:', userId, 'from label:', labelName, 'in story(id):', StoryId);
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db('mobogadb');
+    const storyColl = db.collection('stories');
+    // check if the label in the story
+    const checkResult = await await storyColl
+      .find({ $and: [{ labels: { $elemMatch: { name: labelName } } }, { id: StoryId }] }).toArray();
+    // if not, return null
+    if (checkResult.length === 0) {
+      return null;
+    }
+    // if yes, go through the labels array
+    await checkResult[0].labels.forEach(async label => {
+      // if the label name is the same as the labelName
+      if (label.name === labelName) {
+        // if user has voted, remove the user from the voted_users array
+        if (label.voted_users.includes(userId)) {
+          const removeUser = await storyColl.updateOne(
+            { id: StoryId },
+            { $pull: { 'labels.$[label].voted_users': userId } },
+            { arrayFilters: [{ 'label.name': labelName }] },
+          );
+          return removeUser;
+        }
+        // if user has not voted, add the user to the voted_users array
+        const addUser = await storyColl.updateOne(
+          { id: StoryId },
+          { $push: { 'labels.$[label].voted_users': userId } },
+					{ arrayFilters: [{ 'label.name': labelName }] },
+        );
+        return addUser;
+      }
+    });
+  } catch (err) {
+    console.log(err);
+    return null;
+  } finally {
+    await client.close();
+  }
 };
 
 // Fengs working area
@@ -510,7 +617,8 @@ export default {
 	updateReview,
 	deleteReview,
 
-	generateStory,
+	generateStory,	
+  deleteAStory,
 	generateGameMedias,
 	generateMovieMedias,
 	generateBooksMedias,
@@ -519,4 +627,6 @@ export default {
 	getAllLabels,
 	addAlabelInDB,
 	setALabelToAStory,
+  deleteALabelFromAStory,
+  voteALabelToAStory,
 };
