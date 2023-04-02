@@ -27,11 +27,12 @@
   "homepage": "https://github.com/appliedtechnology/salt-jsfs-test-db-cartApI#readme",
   "dependencies": {
     "@tsconfig/node16": "^1.0.3",
-    "bcryptjs": "^2.4.3",
     "axios": "^1.3.4",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.17.1",
+    "google-auth-library": "^8.7.0",
     "jsonwebtoken": "^9.0.0",
     "mongodb": "^3.7.3",
     "pg": "^8.3.0",
