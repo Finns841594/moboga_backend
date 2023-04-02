@@ -26,208 +26,242 @@ const capitalize = (str: string) => str
 		.join(' ');
 
 const fetchAllStories = async () => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('stories');
-    const stories = await collection.find({}).toArray();
-    return stories;
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('stories');
+		const stories = await collection.find({}).toArray();
+		return stories;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 const fetchStoryById = async (storyId: string) => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('stories');
-    const stories = await collection.findOne({ id: storyId });
-    return stories;
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('stories');
+		const stories = await collection.findOne({ id: storyId });
+		return stories;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 const getStoriesByLabel = async (searchLabel: string) => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('stories');
-    const stories = await collection
-      .find({ labels: { $elemMatch: { name: searchLabel } } })
-      .toArray();
-    return stories;
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('stories');
+		const stories = await collection
+			.find({ labels: { $elemMatch: { name: searchLabel } } })
+			.toArray();
+		return stories;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 const fetchMediasByOid = async (mediaOid: string) => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('medias');
-    let media = await collection.find({ _id: ObjectId(mediaOid) }).toArray();
-    // lines below should be removed after fixing the database objectid problem
-    if (media.length === 0) {
-      media = await collection.find({ _id: mediaOid }).toArray();
-    }
-    return media[0];
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('medias');
+		let media = await collection.find({ _id: ObjectId(mediaOid) }).toArray();
+		// lines below should be removed after fixing the database objectid problem
+		if (media.length === 0) {
+			media = await collection.find({ _id: mediaOid }).toArray();
+		}
+		return media[0];
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 const addNewUser = async (firstName, lastName, email, password) => {
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const id = randomUUID();
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('users');
-    await collection.insertOne({
-      id,
-      firstName,
-      lastName,
-      email,
-      hashedPassword,
-    });
-    const token = jwt.sign(
-      {
-        email,
-        id,
-        firstName,
-        lastName,
-      },
-      process.env.JWT_SECRET as string,
-      {
-        expiresIn: '48h',
-      },
-    );
-    return token;
-  } catch (err) {
-    return { message: 'could not add new user' };
-  } finally {
-    await client.close();
-  }
+	const hashedPassword = await bcrypt.hash(password, 10);
+	const id = randomUUID();
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('users');
+		await collection.insertOne({
+			id,
+			firstName,
+			lastName,
+			email,
+			hashedPassword,
+		});
+		const token = jwt.sign(
+			{
+				email,
+				id,
+				firstName,
+				lastName,
+			},
+			process.env.JWT_SECRET as string,
+			{
+				expiresIn: '2d',
+			}
+		);
+		return token;
+	} catch (err) {
+		return { message: 'could not add new user' };
+	} finally {
+		await client.close();
+	}
+};
+const createGoogleUser = async profile => {
+	const id = randomUUID();
+	const { given_name, family_name, email, picture } = profile;
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('users');
+		const user = await collection.insertOne({
+			id,
+			firstName: given_name,
+			lastName: family_name,
+			email,
+			picture,
+		});
+		const token = jwt.sign(
+			{
+				id,
+				firstName: given_name,
+				lastName: family_name,
+				email,
+				picture,
+			},
+			process.env.JWT_SECRET as string,
+			{
+				expiresIn: '2d',
+			}
+		);
+		return token;
+	} catch (err) {
+		return { message: 'could not add new user' };
+	} finally {
+		await client.close();
+	}
 };
 
 const getUser = async email => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('users');
-    const existingUser = await collection.findOne({ email });
-    return existingUser;
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('users');
+		const existingUser = await collection.findOne({ email });
+		return existingUser;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 const getAllReviewsFromUser = async userId => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('reviews');
-    const reviews = await collection.find({ userId }).toArray();
-    return reviews;
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('reviews');
+		const reviews = await collection.find({ userId }).toArray();
+		return reviews;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 const getReviewsByStoryId = async storyId => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('reviews');
-    const reviews = await collection.find({ storyId }).toArray();
-    return reviews;
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('reviews');
+		const reviews = await collection.find({ storyId }).toArray();
+		return reviews;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 // eslint-disable-next-line consistent-return
 const addNewReview = async reviewObj => {
-  const {
-    userId, userName, content, rating, mediaType, storyId, storyName,
-  } = reviewObj;
-  const id = randomUUID();
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('reviews');
-    await collection.insertOne({
-      id,
-      userId,
-      userName,
-      content,
-      rating,
-      mediaType,
-      storyId,
-      storyName,
-    });
-  } catch (err) {
-    return { message: 'could not add new review' };
-  } finally {
-    await client.close();
-  }
+	const { userId, userName, content, rating, mediaType, storyId, storyName } =
+		reviewObj;
+	const id = randomUUID();
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('reviews');
+		await collection.insertOne({
+			id,
+			userId,
+			userName,
+			content,
+			rating,
+			mediaType,
+			storyId,
+			storyName,
+		});
+	} catch (err) {
+		return { message: 'could not add new review' };
+	} finally {
+		await client.close();
+	}
 };
 
 const updateReview = async (reviewId, newContent) => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('reviews');
-    await collection.updateOne(
-      { id: reviewId },
-      { $set: { content: newContent } },
-    );
-  } catch (err) {
-    return { message: 'could not update review' };
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('reviews');
+		await collection.updateOne(
+			{ id: reviewId },
+			{ $set: { content: newContent } }
+		);
+	} catch (err) {
+		return { message: 'could not update review' };
+	} finally {
+		await client.close();
+	}
 };
 
 const deleteReview = async reviewId => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('reviews');
-    await collection.deleteOne({ id: reviewId });
-  } catch (err) {
-    return { message: 'could not delete review' };
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('reviews');
+		await collection.deleteOne({ id: reviewId });
+	} catch (err) {
+		return { message: 'could not delete review' };
+	} finally {
+		await client.close();
+	}
 };
 
 // Fengs working area
@@ -252,6 +286,7 @@ const generateStory = async (storyName: string) => {
   } finally {
     await client.close();
   }
+
 };
 
 const deleteAStory = async (storyId: string) => {
@@ -322,98 +357,98 @@ const generateGameMedias = async (storyName: string) => {
 };
 
 const generateMovieMedias = async (storyName: string) => {
-  const amoutsOfMedia = 15;
-  const url = movieApiPath + storyName;
-  const rawData = await axios(url);
-  const bulkMedias = [];
-  rawData.data.results.slice(0, amoutsOfMedia).forEach(element => {
-    bulkMedias.push({
-      id: randomUUID(),
-      name: element.original_title,
-      description: element.overview,
-      type: 'movies',
-      released: element.release_date,
-      imgurl: `https://image.tmdb.org/t/p/original/${element.poster_path}`,
-      ratingFromAPI: element.vote_average * 10,
-      voteNumberFromAPI: element.vote_count,
-      metaData: element,
-    });
-  });
+	const amoutsOfMedia = 15;
+	const url = movieApiPath + storyName;
+	const rawData = await axios(url);
+	const bulkMedias = [];
+	rawData.data.results.slice(0, amoutsOfMedia).forEach(element => {
+		bulkMedias.push({
+			id: randomUUID(),
+			name: element.original_title,
+			description: element.overview,
+			type: 'movies',
+			released: element.release_date,
+			imgurl: `https://image.tmdb.org/t/p/original/${element.poster_path}`,
+			ratingFromAPI: element.vote_average * 10,
+			voteNumberFromAPI: element.vote_count,
+			metaData: element,
+		});
+	});
 
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const storiesCollection = db.collection('stories');
-    const mediasCollection = db.collection('medias');
-    const responseAddDB = await mediasCollection.insertMany(bulkMedias);
-    const mediaArrayForStory = [];
-    responseAddDB.ops.forEach(element => {
-      mediaArrayForStory.push({
-        // eslint-disable-next-line no-underscore-dangle
-        oid: element._id.toString(),
-        name: element.name,
-      });
-    });
-    const responseAddToStory = await storiesCollection.updateOne(
-      { storyname: storyName },
-      { $set: { movies: mediaArrayForStory } },
-    );
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const storiesCollection = db.collection('stories');
+		const mediasCollection = db.collection('medias');
+		const responseAddDB = await mediasCollection.insertMany(bulkMedias);
+		const mediaArrayForStory = [];
+		responseAddDB.ops.forEach(element => {
+			mediaArrayForStory.push({
+				// eslint-disable-next-line no-underscore-dangle
+				oid: element._id.toString(),
+				name: element.name,
+			});
+		});
+		const responseAddToStory = await storiesCollection.updateOne(
+			{ storyname: storyName },
+			{ $set: { movies: mediaArrayForStory } }
+		);
 
-    return { responseAddDB, responseAddToStory };
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+		return { responseAddDB, responseAddToStory };
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 const generateBooksMedias = async (storyName: string) => {
-  const amoutsOfMedia = 10;
-  const url = bookApiPath + storyName;
-  const rawData = await axios(url);
-  const bulkMedias = [];
-  rawData.data.items.slice(0, amoutsOfMedia).forEach(element => {
-    bulkMedias.push({
-      id: randomUUID(),
-      name: element.volumeInfo.title,
-      description: element.volumeInfo.description,
-      type: 'books',
-      released: element.volumeInfo.publishedDate,
-      imgurl: element.volumeInfo.imageLinks?.thumbnail,
-      ratingFromAPI: element.volumeInfo.averageRating * 20,
-      voteNumberFromAPI: element.volumeInfo.ratingsCount,
-      metaData: element,
-    });
-  });
+	const amoutsOfMedia = 10;
+	const url = bookApiPath + storyName;
+	const rawData = await axios(url);
+	const bulkMedias = [];
+	rawData.data.items.slice(0, amoutsOfMedia).forEach(element => {
+		bulkMedias.push({
+			id: randomUUID(),
+			name: element.volumeInfo.title,
+			description: element.volumeInfo.description,
+			type: 'books',
+			released: element.volumeInfo.publishedDate,
+			imgurl: element.volumeInfo.imageLinks?.thumbnail,
+			ratingFromAPI: element.volumeInfo.averageRating * 20,
+			voteNumberFromAPI: element.volumeInfo.ratingsCount,
+			metaData: element,
+		});
+	});
 
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const storiesCollection = db.collection('stories');
-    const mediasCollection = db.collection('medias');
-    const responseAddDB = await mediasCollection.insertMany(bulkMedias);
-    const mediaArrayForStory = [];
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const storiesCollection = db.collection('stories');
+		const mediasCollection = db.collection('medias');
+		const responseAddDB = await mediasCollection.insertMany(bulkMedias);
+		const mediaArrayForStory = [];
 
-    responseAddDB.ops.forEach(element => {
-      mediaArrayForStory.push({
-        // eslint-disable-next-line no-underscore-dangle
-        oid: element._id.toString(),
-        name: element.name,
-      });
-    });
-    const responseAddToStory = await storiesCollection.updateOne(
-      { storyname: storyName },
-      { $set: { books: mediaArrayForStory } },
-    );
+		responseAddDB.ops.forEach(element => {
+			mediaArrayForStory.push({
+				// eslint-disable-next-line no-underscore-dangle
+				oid: element._id.toString(),
+				name: element.name,
+			});
+		});
+		const responseAddToStory = await storiesCollection.updateOne(
+			{ storyname: storyName },
+			{ $set: { books: mediaArrayForStory } }
+		);
 
-    return { responseAddDB, responseAddToStory };
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+		return { responseAddDB, responseAddToStory };
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 // const addStoryFromTestStoriesCollectionToStoriesCollection = async (storyId: string) => {
@@ -432,41 +467,41 @@ const generateBooksMedias = async (storyName: string) => {
 // };
 
 const getAllLabels = async () => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('labels');
-    const labels = await collection.find({}).toArray();
-    return labels;
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('labels');
+		const labels = await collection.find({}).toArray();
+		return labels;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 const addAlabelInDB = async (labelName: string) => {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db('mobogadb');
-    const collection = db.collection('labels');
-    // check if label already exist
-    const checkResult = await collection.findOne({ name: labelName });
-    if (!checkResult) {
-      const response = await collection.insertOne({
-        id: 0,
-        name: labelName,
-      });
-      return response;
-    }
-    return null;
-  } catch (err) {
-    return null;
-  } finally {
-    await client.close();
-  }
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('labels');
+		// check if label already exist
+		const checkResult = await collection.findOne({ name: labelName });
+		if (!checkResult) {
+			const response = await collection.insertOne({
+				id: 0,
+				name: labelName,
+			});
+			return response;
+		}
+		return null;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
 };
 
 const setALabelToAStory = async (labelName: string, StoryId: string) => {
@@ -568,29 +603,30 @@ const voteALabelToAStory = async (labelName: string, StoryId: string, userId: st
 // Fengs working area
 
 export default {
-  fetchAllStories,
-  fetchStoryById,
-  getStoriesByLabel,
-  fetchMediasByOid,
+	fetchAllStories,
+	fetchStoryById,
+	getStoriesByLabel,
+	fetchMediasByOid,
 
-  addNewUser,
-  getUser,
+	addNewUser,
+	getUser,
+	createGoogleUser,
 
-  addNewReview,
-  getReviewsByStoryId,
-  updateReview,
-  deleteReview,
+	addNewReview,
+	getReviewsByStoryId,
+	updateReview,
+	deleteReview,
 
-  generateStory,
-	deleteAStory,
-  generateGameMedias,
-  generateMovieMedias,
-  generateBooksMedias,
-  getAllReviewsFromUser,
+	generateStory,	
+  deleteAStory,
+	generateGameMedias,
+	generateMovieMedias,
+	generateBooksMedias,
+	getAllReviewsFromUser,
 
-  getAllLabels,
-  addAlabelInDB,
-  setALabelToAStory,
-	deleteALabelFromAStory,
+	getAllLabels,
+	addAlabelInDB,
+	setALabelToAStory,
+  deleteALabelFromAStory,
   voteALabelToAStory,
 };

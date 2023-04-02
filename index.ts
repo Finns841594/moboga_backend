@@ -3,12 +3,14 @@
 import express, { Request, Response, Application } from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
+const { OAuth2Client } = require('google-auth-library');
 import {
   allStories,
   getOneStoryById,
   getStoriesByLabel,
   fetchMediasByOid,
   createUser,
+	createGoogleUser,
   getExistingUser,
   createReview,
   generateStory,
@@ -26,6 +28,7 @@ import {
   deleteALabelFromAStory,
   voteALabelToAStory,
 } from './stories';
+import dotenv from 'dotenv';
 
 const bcrypt = require('bcryptjs');
 
@@ -34,6 +37,23 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(cors());
+dotenv.config();
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+async function verifyGoogleToken(token) {
+	try {
+		const ticket = await client.verifyIdToken({
+			idToken: token,
+			audience: GOOGLE_CLIENT_ID,
+		});
+
+		return { payload: ticket.getPayload() };
+	} catch (error) {
+		return { error: 'Invalid user detected. Please try again' };
+	}
+}
 
 app.get('/api/stories', async (req: Request, res: Response) => {
   const stories = await allStories();
@@ -64,62 +84,93 @@ app.get('/api/medias/:id', async (req: Request, res: Response) => {
 });
 
 app.get('/api/users', async (req: Request, res: Response) => {
-  const token = req.headers.authorization.split(' ')[1];
-  if (!token) {
-    return res.status(401).json({ message: 'Authorization token missing' });
-  }
-  try {
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET as string);
-    const user = await getExistingUser(decodedToken.email);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.status(200).json({
-      userId: user.id,
-      email: user.email,
-      name: user.firstName,
-      lastName: user.lastName,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(401).json({ message: 'Authorization token invalid' });
-  }
+	const token = req.headers.authorization.split(' ')[1];
+	try {
+		const decodedToken = jwt.verify(token, process.env.JWT_SECRET as string);
+		const user = await getExistingUser(decodedToken.email);
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+		res.status(200).json({
+			userId: user.id,
+			email: user.email,
+			name: user.firstName,
+			lastName: user.lastName,
+			picture: user.picture,
+		});
+	} catch (error) {
+		res.status(401).json({ message: 'Authorization token invalid' });
+	}
 });
 
 app.post('/api/users', async (req: Request, res: Response) => {
-  const {
-    firstName, lastName, email, password,
-  } = req.body;
-  const existingUser = await getExistingUser(email);
-  if (existingUser) {
-    return res.status(400).json({ message: 'User already exists' });
-  }
-  const token = await createUser(firstName, lastName, email, password);
-  res.status(200).json(token);
+	const { firstName, lastName, email, password } = req.body;
+	const existingUser = await getExistingUser(email);
+	if (existingUser) {
+		return res.status(400).json({ message: 'User already exists' });
+	}
+	const token = await createUser(firstName, lastName, email, password);
+	res.status(201).json(token);
+});
+
+app.post('/api/google-users', async (req: Request, res: Response) => {
+	if (req.body.credential) {
+		const verificationResponse = await verifyGoogleToken(req.body.credential);
+		if (verificationResponse.error) {
+			return res.status(400).json({
+				message: verificationResponse.error,
+			});
+		}
+		const profile = verificationResponse?.payload;
+		const existingUser = await getExistingUser(profile.email);
+
+		if (existingUser) {
+			return res.status(400).json({ message: 'User already exists' });
+		}
+		const userToken = await createGoogleUser(profile);
+		res.status(201).json(userToken);
+	}
 });
 
 app.post('/api/login', async (req: Request, res: Response) => {
-  const { email, password } = req.body;
-  try {
-    const existingUser = await getExistingUser(email);
-    if (!existingUser) {
-      return res.status(400).json({ message: 'User name incorrect' });
-    }
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      existingUser.hashedPassword,
-    );
-    if (!isPasswordCorrect) {
-      return res.status(401).json({ message: 'Password incorrect' });
-    }
-    const token = jwt.sign({ email }, process.env.JWT_SECRET as string, {
-      expiresIn: '48h',
-    });
-    res.status(200).json(token);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
+	const { email, password } = req.body;
+	try {
+		const existingUser = await getExistingUser(email);
+		if (!existingUser) {
+			return res.status(400).json({ message: 'User name incorrect' });
+		}
+		const isPasswordCorrect = await bcrypt.compare(
+			password,
+			existingUser.hashedPassword
+		);
+		if (!isPasswordCorrect) {
+			return res.status(401).json({ message: 'Password incorrect' });
+		}
+		const token = jwt.sign({ email }, process.env.JWT_SECRET as string, {
+			expiresIn: '2d',
+		});
+		res.status(200).json(token);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ message: 'Server error' });
+	}
+});
+
+app.post('/api/login-google', async (req: Request, res: Response) => {
+	if (req.body.credential) {
+		const verificationResponse = await verifyGoogleToken(req.body.credential);
+		if (verificationResponse.error) {
+			return res.status(400).json({
+				message: verificationResponse.error,
+			});
+		}
+		const profile = verificationResponse?.payload;
+		const { email } = profile;
+		const token = jwt.sign({ email }, process.env.JWT_SECRET as string, {
+			expiresIn: '2d',
+		});
+		res.status(201).json(token);
+	}
 });
 
 app.get(

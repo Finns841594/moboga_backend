@@ -11,6 +11,8 @@ const fetchMediasByOid = async (mediaOid: string) => db.fetchMediasByOid(mediaOi
 
 const createUser = async (firstName, lastName, email, password) => db.addNewUser(firstName, lastName, email, password);
 
+const createGoogleUser = async profile => db.createGoogleUser(profile);
+
 const getExistingUser = async email => db.getUser(email);
 
 const getAllUserReviews = async (userId: string) => db.getAllReviewsFromUser(userId);
@@ -49,6 +51,7 @@ export {
   getStoriesByLabel,
   fetchMediasByOid,
   createUser,
+	createGoogleUser,
   getExistingUser,
   getAllUserReviews,
   getReviewsByStoryId,
