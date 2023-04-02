@@ -254,6 +254,21 @@ const generateStory = async (storyName: string) => {
   }
 };
 
+const deleteAStory = async (storyId: string) => {
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('stories');
+		const deleteStoryResponse = collection.deleteOne({ id: storyId });
+		return deleteStoryResponse;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
+};
+
 const generateGameMedias = async (storyName: string) => {
   const amoutsOfMedia = 10;
   const url = gameApiPath + storyName;
@@ -293,7 +308,12 @@ const generateGameMedias = async (storyName: string) => {
       { $set: { games: mediaArrayForStory } },
     );
 
-    return { addedToStory: storyName, responseAddDB, responseAddToStory };
+		const addedStoryInfo = await storiesCollection.find(
+			{ storyname: storyName },
+		).toArray();
+		const addedStoryId = addedStoryInfo[0].id;
+
+    return { addedToStoryWithId: addedStoryId, responseAddDB, responseAddToStory };
   } catch (err) {
     return null;
   } finally {
@@ -562,6 +582,7 @@ export default {
   deleteReview,
 
   generateStory,
+	deleteAStory,
   generateGameMedias,
   generateMovieMedias,
   generateBooksMedias,

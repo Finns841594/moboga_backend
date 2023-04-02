@@ -25,6 +25,8 @@ const deleteReview = async (reviewId: string) => db.deleteReview(reviewId);
 
 const generateStory = async (storyName: string) => db.generateStory(storyName);
 
+const deleteAStory = async (storyId: string) => db.deleteAStory(storyId);
+
 const generateGameMedias = async (storyName: string) => db.generateGameMedias(storyName);
 
 const generateMovieMedias = async (storyName: string) => db.generateMovieMedias(storyName);
@@ -54,6 +56,7 @@ export {
   updateReview,
   deleteReview,
   generateStory,
+  deleteAStory,
   generateGameMedias,
   generateMovieMedias,
   generateBooksMedias,

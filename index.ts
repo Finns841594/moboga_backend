@@ -12,6 +12,7 @@ import {
   getExistingUser,
   createReview,
   generateStory,
+  deleteAStory,
   generateGameMedias,
   generateMovieMedias,
   generateBooksMedias,
@@ -168,12 +169,22 @@ app.delete('/api/reviews/:reviewId', async (req: Request, res: Response) => {
 });
 
 // Fengs working area
+
+// Create a new story
 app.post('/api/stories/:storyname', async (req: Request, res: Response) => {
   const storyName = req.params.storyname;
   const response = await generateStory(storyName);
   res.status(200).json(response);
 });
 
+// Delete a story
+app.delete('/api/stories/:storyid', async (req: Request, res: Response) => {
+  const storyId = req.params.storyid;
+  const response = await deleteAStory(storyId);
+  res.status(200).json(response);
+});
+
+// Generate media for a story
 app.post(
   '/api/generatemedias/:storyname',
   async (req: Request, res: Response) => {
