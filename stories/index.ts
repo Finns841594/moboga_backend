@@ -35,9 +35,13 @@ const generateMovieMedias = async (storyName: string) => db.generateMovieMedias(
 
 const generateBooksMedias = async (storyName: string) => db.generateBooksMedias(storyName);
 
+const removeMediaFromStory = async (storyId: string, mediaOid: string) => db.removeMediaFromStory(storyId, mediaOid);
+
 const getAllLabels = async () => db.getAllLabels();
 
 const addAlabelInDB = async (labelName: string) => db.addAlabelInDB(labelName);
+
+const deleteAlabelInDB = async (labelName: string) => db.deleteAlabelInDB(labelName);
 
 const setALabelToAStory = async (labelName: string, StoryId: string) => db.setALabelToAStory(labelName, StoryId);
 
@@ -51,7 +55,7 @@ export {
   getStoriesByLabel,
   fetchMediasByOid,
   createUser,
-	createGoogleUser,
+  createGoogleUser,
   getExistingUser,
   getAllUserReviews,
   getReviewsByStoryId,
@@ -63,8 +67,10 @@ export {
   generateGameMedias,
   generateMovieMedias,
   generateBooksMedias,
+  removeMediaFromStory,
   getAllLabels,
   addAlabelInDB,
+  deleteAlabelInDB,
   setALabelToAStory,
   deleteALabelFromAStory,
   voteALabelToAStory,

@@ -1,3 +1,4 @@
+/* eslint-disable object-curly-newline */
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/indent */
 /* eslint-disable no-trailing-spaces */
@@ -116,7 +117,7 @@ const addNewUser = async (firstName, lastName, email, password) => {
 			process.env.JWT_SECRET as string,
 			{
 				expiresIn: '2d',
-			}
+			},
 		);
 		return token;
 	} catch (err) {
@@ -127,7 +128,9 @@ const addNewUser = async (firstName, lastName, email, password) => {
 };
 const createGoogleUser = async profile => {
 	const id = randomUUID();
-	const { given_name, family_name, email, picture } = profile;
+	const {
+ given_name, family_name, email, picture, 
+} = profile;
 	const client = new MongoClient(uri);
 	try {
 		await client.connect();
@@ -151,7 +154,7 @@ const createGoogleUser = async profile => {
 			process.env.JWT_SECRET as string,
 			{
 				expiresIn: '2d',
-			}
+			},
 		);
 		return token;
 	} catch (err) {
@@ -208,8 +211,9 @@ const getReviewsByStoryId = async storyId => {
 
 // eslint-disable-next-line consistent-return
 const addNewReview = async reviewObj => {
-	const { userId, userName, content, rating, mediaType, storyId, storyName } =
-		reviewObj;
+	const {
+ userId, userName, content, rating, mediaType, storyId, storyName, 
+} =		reviewObj;
 	const id = randomUUID();
 	const client = new MongoClient(uri);
 	try {
@@ -241,7 +245,7 @@ const updateReview = async (reviewId, newContent) => {
 		const collection = db.collection('reviews');
 		await collection.updateOne(
 			{ id: reviewId },
-			{ $set: { content: newContent } }
+			{ $set: { content: newContent } },
 		);
 	} catch (err) {
 		return { message: 'could not update review' };
@@ -271,22 +275,26 @@ const generateStory = async (storyName: string) => {
     await client.connect();
     const db = client.db('mobogadb');
     const collection = db.collection('stories');
-    const response = await collection.insertOne({
-      id: randomUUID(),
-      storyname: capitalize(storyName.toLowerCase()),
-      labels: [],
-      books: [],
-      movies: [],
-      games: [],
-      rating: 0,
-    });
-    return response;
+		// check if the story already exists
+		const checkResult = await collection.find({ storyname: capitalize(storyName.toLowerCase()) }).toArray();
+		if (checkResult.length === 0) {
+			const response = await collection.insertOne({
+				id: randomUUID(),
+				storyname: capitalize(storyName.toLowerCase()),
+				labels: [],
+				books: [],
+				movies: [],
+				games: [],
+				rating: 0,
+			});
+			return response;
+		}
+		return null;
   } catch (err) {
     return null;
   } finally {
     await client.close();
   }
-
 };
 
 const deleteAStory = async (storyId: string) => {
@@ -392,7 +400,7 @@ const generateMovieMedias = async (storyName: string) => {
 		});
 		const responseAddToStory = await storiesCollection.updateOne(
 			{ storyname: storyName },
-			{ $set: { movies: mediaArrayForStory } }
+			{ $set: { movies: mediaArrayForStory } },
 		);
 
 		return { responseAddDB, responseAddToStory };
@@ -440,7 +448,7 @@ const generateBooksMedias = async (storyName: string) => {
 		});
 		const responseAddToStory = await storiesCollection.updateOne(
 			{ storyname: storyName },
-			{ $set: { books: mediaArrayForStory } }
+			{ $set: { books: mediaArrayForStory } },
 		);
 
 		return { responseAddDB, responseAddToStory };
@@ -450,6 +458,30 @@ const generateBooksMedias = async (storyName: string) => {
 		await client.close();
 	}
 };
+
+const removeMediaFromStory = async (storyId: string, mediaId: string) => {
+	// const client = new MongoClient(uri);
+	// try {
+	// 	await client.connect();
+	// 	const db = client.db('mobogadb');
+	// 	const storiesCollection = db.collection('stories');
+	// 	// Should I remove the media from the medias collection?
+	// 	// const mediasCollection = db.collection('medias');
+	// 	const responseRemoveFromStory = await storiesCollection.updateOne(
+	// 		{ id: storyId },
+	// 		{ $pull: {
+	// 				games: { oid: mediaId },
+	// 				books: { oid: mediaId },
+	// 				movies: { oid: mediaId } } },
+	// 	);
+	// 	console.log('😃 Checkout delete response', responseRemoveFromStory);
+	// 		return responseRemoveFromStory;
+	// 	} catch (err) {
+	// 		return null;
+	// 	} finally {
+	// 		await client.close();
+	// 	}
+	};
 
 // const addStoryFromTestStoriesCollectionToStoriesCollection = async (storyId: string) => {
 // 	const client = new MongoClient(uri);
@@ -493,10 +525,26 @@ const addAlabelInDB = async (labelName: string) => {
 			const response = await collection.insertOne({
 				id: 0,
 				name: labelName,
+				voted_users: [],
 			});
 			return response;
 		}
 		return null;
+	} catch (err) {
+		return null;
+	} finally {
+		await client.close();
+	}
+};
+
+const deleteAlabelInDB = async (labelName: string) => {
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const collection = db.collection('labels');
+		const deleteResult = await collection.deleteOne({ name: labelName });
+		return deleteResult;
 	} catch (err) {
 		return null;
 	} finally {
@@ -622,10 +670,12 @@ export default {
 	generateGameMedias,
 	generateMovieMedias,
 	generateBooksMedias,
+	removeMediaFromStory,
 	getAllReviewsFromUser,
 
 	getAllLabels,
 	addAlabelInDB,
+	deleteAlabelInDB,
 	setALabelToAStory,
   deleteALabelFromAStory,
   voteALabelToAStory,

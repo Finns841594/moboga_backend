@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/indent */
+/* eslint-disable no-tabs */
 /* eslint-disable consistent-return */
 /* eslint-disable max-len */
 import express, { Request, Response, Application } from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
-const { OAuth2Client } = require('google-auth-library');
+import dotenv from 'dotenv';
 import {
   allStories,
   getOneStoryById,
@@ -18,17 +20,20 @@ import {
   generateGameMedias,
   generateMovieMedias,
   generateBooksMedias,
+	removeMediaFromStory,
   getAllUserReviews,
   getReviewsByStoryId,
   updateReview,
   deleteReview,
   getAllLabels,
   addAlabelInDB,
+	deleteAlabelInDB,
   setALabelToAStory,
   deleteALabelFromAStory,
   voteALabelToAStory,
 } from './stories';
-import dotenv from 'dotenv';
+
+const { OAuth2Client } = require('google-auth-library');
 
 const bcrypt = require('bcryptjs');
 
@@ -39,7 +44,7 @@ app.use(express.json());
 app.use(cors());
 dotenv.config();
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const { GOOGLE_CLIENT_ID } = process.env;
 const client = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 async function verifyGoogleToken(token) {
@@ -104,7 +109,9 @@ app.get('/api/users', async (req: Request, res: Response) => {
 });
 
 app.post('/api/users', async (req: Request, res: Response) => {
-	const { firstName, lastName, email, password } = req.body;
+	const {
+ firstName, lastName, email, password,
+} = req.body;
 	const existingUser = await getExistingUser(email);
 	if (existingUser) {
 		return res.status(400).json({ message: 'User already exists' });
@@ -141,7 +148,7 @@ app.post('/api/login', async (req: Request, res: Response) => {
 		}
 		const isPasswordCorrect = await bcrypt.compare(
 			password,
-			existingUser.hashedPassword
+			existingUser.hashedPassword,
 		);
 		if (!isPasswordCorrect) {
 			return res.status(401).json({ message: 'Password incorrect' });
@@ -247,6 +254,13 @@ app.post(
   },
 );
 
+// Remove a media from a story
+app.delete('/api/removemedias/:storyid/:mediaid', async (req: Request, res: Response) => {
+	const { storyId, mediaId } = req.params;
+	const response = await removeMediaFromStory(storyId, mediaId);
+	res.status(200).json(response);
+});
+
 // app.post('/api/generatemedias/games/:storyname', async (req: Request, res: Response) => {
 //   const storyName = req.params.storyname;
 //   const response = await generateGameMedias(storyName);
@@ -282,6 +296,13 @@ app.post('/api/labels/:labelName', async (req: Request, res: Response) => {
   const { labelName } = req.params;
   const response = await addAlabelInDB(labelName);
   res.status(201).json(response);
+});
+
+// delete a label from DB, UNUSED
+app.delete('/api/labels/:labelName', async (req: Request, res: Response) => {
+	const { labelName } = req.params;
+	const response = await deleteAlabelInDB(labelName);
+	res.status(200).json(response);
 });
 
 // Add a label to a story
