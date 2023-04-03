@@ -256,8 +256,8 @@ app.post(
 
 // Remove a media from a story
 app.delete('/api/removemedias/:storyid/:mediaid', async (req: Request, res: Response) => {
-	const { storyId, mediaId } = req.params;
-	const response = await removeMediaFromStory(storyId, mediaId);
+	const { storyid, mediaid } = req.params;
+	const response = await removeMediaFromStory(storyid, mediaid);
 	res.status(200).json(response);
 });
 

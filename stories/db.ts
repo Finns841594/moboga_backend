@@ -460,27 +460,37 @@ const generateBooksMedias = async (storyName: string) => {
 };
 
 const removeMediaFromStory = async (storyId: string, mediaId: string) => {
-	// const client = new MongoClient(uri);
-	// try {
-	// 	await client.connect();
-	// 	const db = client.db('mobogadb');
-	// 	const storiesCollection = db.collection('stories');
-	// 	// Should I remove the media from the medias collection?
-	// 	// const mediasCollection = db.collection('medias');
-	// 	const responseRemoveFromStory = await storiesCollection.updateOne(
-	// 		{ id: storyId },
-	// 		{ $pull: {
-	// 				games: { oid: mediaId },
-	// 				books: { oid: mediaId },
-	// 				movies: { oid: mediaId } } },
-	// 	);
-	// 	console.log('😃 Checkout delete response', responseRemoveFromStory);
-	// 		return responseRemoveFromStory;
-	// 	} catch (err) {
-	// 		return null;
-	// 	} finally {
-	// 		await client.close();
-	// 	}
+	console.log('❌ Removing media with id:', mediaId, 'from story with id:', storyId, '...');
+	const client = new MongoClient(uri);
+	try {
+		await client.connect();
+		const db = client.db('mobogadb');
+		const storiesCollection = db.collection('stories');
+		// Should I remove the media from the medias collection?
+		// const mediasCollection = db.collection('medias');
+
+		// Method 1: Remove media from story here in backend 
+		const RemovingMediaStory = await storiesCollection.find({ id: storyId }).toArray();
+		const filteredMovies = RemovingMediaStory[0].movies.filter((element: any) => element.oid !== mediaId);
+		const filteredBooks = RemovingMediaStory[0].books.filter((element: any) => element.oid !== mediaId);
+		const filteredGames = RemovingMediaStory[0].games.filter((element: any) => element.oid !== mediaId);
+		RemovingMediaStory[0].movies = filteredMovies;
+		RemovingMediaStory[0].books = filteredBooks;
+		RemovingMediaStory[0].games = filteredGames;
+		const responseRemoveFromStory = await storiesCollection.updateOne(
+			{ id: storyId }, 
+			{ $set: { movies: RemovingMediaStory[0].movies, books: RemovingMediaStory[0].books, games: RemovingMediaStory[0].games } },
+		);
+
+		// Method 2: Remove media from story in Database
+		// To be implemented
+		
+		return responseRemoveFromStory;
+		} catch (err) {
+			return null;
+		} finally {
+			await client.close();
+		}
 	};
 
 // const addStoryFromTestStoriesCollectionToStoriesCollection = async (storyId: string) => {
